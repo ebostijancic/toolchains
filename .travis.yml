@@ -1,0 +1,52 @@
+language: bash
+sudo: true
+dist: trusty
+
+os:
+  - linux
+  - osx
+
+osx_image: xcode7
+
+cache:
+  ccache: true
+  directories:
+    - $TRAVIS_BUILD_DIR/dl
+
+addons:
+  apt:
+    packages:
+      - bison
+      - flex
+      - gperf
+      - libncurses5-dev
+      - texinfo
+      - help2man
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gawk binutils xz gnu-tar help2man; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install autoconf gnu-sed mpfr gmp gcc; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew brew tap homebrew/dupes; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install grep -—with-default-names; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install --universal gettext; fi
+
+env:
+  - TOOLCHAIN=nerves_toolchain_arm_unknown_linux_gnueabi
+  - TOOLCHAIN=nerves_toolchain_arm_unknown_linux_gnueabihf
+  - TOOLCHAIN=nerves_toolchain_armv5tejl_unknown_linux_musleabi
+  - TOOLCHAIN=nerves_toolchain_armv6_rpi_linux_gnueabi
+  - TOOLCHAIN=nerves_toolchain_i586_unknown_linux_gnu
+  - TOOLCHAIN=nerves_toolchain_mipsel_unknown_linux_musl
+  - TOOLCHAIN=nerves_toolchain_x86_64_unknown_linux_musl
+
+script:
+  - export BUILD_ARCH=`uname -m`
+  - export BUILD_OS=`uname -s | awk '{print tolower($0)}'`
+  - export CONFIG=$BUILD_OS-$BUILD_ARCH-$TOOLCHAIN
+  - export WORK_DIR=$TRAVIS_BUILD_DIR/work-$CONFIG
+  - echo $WORK_DIR
+  - nerves_toolchain_ctng/build.sh $TOOLCHAIN
+
+after_failure:
+  - tail -n 1000 $WORK_DIR/build/build.log
